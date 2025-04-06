@@ -1,4 +1,4 @@
-# student_management.py
+# Mgtsys.py
 
 class Student:
     def __init__(self, student_id, name, age):
@@ -16,23 +16,21 @@ class StudentManagementSystem:
 
     def add_student(self, student_id, name, age):
         if student_id in self.students:
-            print("Student already exists.")
-        else:
-            self.students[student_id] = Student(student_id, name, age)
-            print("Student added successfully.")
+            return "Student already exists."
+        self.students[student_id] = Student(student_id, name, age)
+        return "Student added successfully."
 
     def view_students(self):
-        for student in self.students.values():
-            print(student)
+        return [str(s) for s in self.students.values()]
 
     def remove_student(self, student_id):
         if student_id in self.students:
             del self.students[student_id]
-            print("Student removed successfully.")
-        else:
-            print("Student not found.")
+            return "Student removed successfully."
+        return "Student not found."
 
 
+# Only runs when script is executed directly
 if __name__ == "__main__":
     sms = StudentManagementSystem()
 
@@ -44,12 +42,13 @@ if __name__ == "__main__":
             sid = input("Enter Student ID: ")
             name = input("Enter Name: ")
             age = input("Enter Age: ")
-            sms.add_student(sid, name, age)
+            print(sms.add_student(sid, name, age))
         elif choice == '2':
-            sms.view_students()
+            for s in sms.view_students():
+                print(s)
         elif choice == '3':
             sid = input("Enter Student ID to remove: ")
-            sms.remove_student(sid)
+            print(sms.remove_student(sid))
         elif choice == '4':
             break
         else:
