@@ -50,11 +50,7 @@ workflows:
   version: 2
   main:
     jobs:
-      - build:
-          context: SonarCloud
-          notify:
-            success: true  # Notify on success
-            failure: true  # Notify on failure
+      - build
       - dockerize:
           requires:
             - build
