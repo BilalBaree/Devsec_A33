@@ -1,0 +1,56 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@2.1.1
+  sonarcloud: sonarsource/sonarcloud@2.0.0
+
+jobs:
+  build-and-scan:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout
+
+      - run:
+          name: Install dependencies
+          command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+
+      - run:
+          name: Run Unit Tests
+          command: pytest
+
+      - run:
+          name: Run Dependency Check (with safety)
+          command: |
+            pip install safety
+            safety check --full-report || true
+
+      - sonarcloud/scan
+
+  dockerize:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup_remote_docker
+
+      - run:
+          name: Build Docker Image
+          command: docker build -t $DOCKERHUB_USER/devsec_a33:latest .
+
+      - run:
+          name: Push Docker Image
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
+            docker push $DOCKERHUB_USER/devsec_a33:latest
+
+workflows:
+  version: 2
+  build_test_scan_deploy:
+    jobs:
+      - build-and-scan
+      - dockerize:
+          requires:
+            - build-and-scan
