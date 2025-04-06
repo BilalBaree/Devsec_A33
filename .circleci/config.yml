@@ -1,9 +1,4 @@
-# eXAMPLE
 version: 2.1
-
-orbs:
-  python: circleci/python@2.1.1
-  sonarcloud: sonarsource/sonarcloud@2.0.0
 
 jobs:
   build-and-scan:
@@ -23,12 +18,28 @@ jobs:
           command: pytest
 
       - run:
-          name: Run Dependency Check (with safety)
+          name: Run Dependency Check
           command: |
             pip install safety
             safety check --full-report || true
 
-      - sonarcloud/scan
+      - run:
+          name: Install Sonar Scanner
+          command: |
+            curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+            unzip sonar-scanner.zip -d $HOME
+            mv $HOME/sonar-scanner-* $HOME/sonar-scanner
+            echo 'export PATH=$HOME/sonar-scanner/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+
+      - run:
+          name: Run SonarQube Scan
+          command: |
+            sonar-scanner \
+              -Dsonar.projectKey=Devsec_A33 \
+              -Dsonar.sources=. \
+              -Dsonar.host.url=https://sonarcloud.io \
+              -Dsonar.login=${SONAR_TOKEN}
 
   dockerize:
     docker:
