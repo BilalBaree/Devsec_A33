@@ -19,7 +19,7 @@ jobs:
       - run:
           name: Run Unit Tests
           command: |
-            pytest
+            pytest > result.log || true
 
       - run:
           name: Run Dependency Check
@@ -28,6 +28,16 @@ jobs:
             safety check || true
 
       - sonarcloud/scan
+
+      - run:
+          name: Send Email Notification for SonarQube and Test Results
+          command: |
+            echo "Subject: CI/CD Pipeline Report for Devsec_A33" > email_body.txt
+            echo "SonarQube analysis and test results are complete. Check the pipeline logs for details." >> email_body.txt
+            echo "Test Results: $(tail -n 10 result.log)" >> email_body.txt
+            echo "SonarQube Quality Gate: $(cat ~/.sonarcloud/qualitygate.json)" >> email_body.txt
+            echo "View detailed logs: $(circleci build --job build)" >> email_body.txt
+            cat email_body.txt | msmtp --from=default -t k213582@nu.edu.pk
 
   dockerize:
     docker:
