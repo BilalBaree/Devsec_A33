@@ -1,7 +1,10 @@
 version: 2.1
 
+orbs:
+  sonarcloud: sonarsource/sonarcloud@2.0.0
+
 jobs:
-  build-and-scan:
+  build:
     docker:
       - image: cimg/python:3.10
     steps:
@@ -15,31 +18,16 @@ jobs:
 
       - run:
           name: Run Unit Tests
-          command: pytest
+          command: |
+            pytest
 
       - run:
           name: Run Dependency Check
           command: |
             pip install safety
-            safety check --full-report || true
+            safety check || true
 
-      - run:
-          name: Install Sonar Scanner
-          command: |
-            curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
-            unzip sonar-scanner.zip -d $HOME
-            mv $HOME/sonar-scanner-* $HOME/sonar-scanner
-            echo 'export PATH=$HOME/sonar-scanner/bin:$PATH' >> $BASH_ENV
-            source $BASH_ENV
-
-      - run:
-          name: Run SonarQube Scan
-          command: |
-            sonar-scanner \
-              -Dsonar.projectKey=Devsec_A33 \
-              -Dsonar.sources=. \
-              -Dsonar.host.url=https://sonarcloud.io \
-              -Dsonar.login=${SONAR_TOKEN}
+      - sonarcloud/scan
 
   dockerize:
     docker:
@@ -49,20 +37,21 @@ jobs:
       - setup_remote_docker
 
       - run:
-          name: Build Docker Image
+          name: Build Docker image
           command: docker build -t $DOCKERHUB_USER/devsec_a33:latest .
 
       - run:
-          name: Push Docker Image
+          name: Push Docker image
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
             docker push $DOCKERHUB_USER/devsec_a33:latest
 
 workflows:
   version: 2
-  build_test_scan_deploy:
+  main:
     jobs:
-      - build-and-scan
+      - build:
+          context: SonarCloud
       - dockerize:
           requires:
-            - build-and-scan
+            - build
